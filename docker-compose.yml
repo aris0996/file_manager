@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  file-manager:
+    build: .
+    container_name: file-manager-app
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_CONFIG=production
+      - SECRET_KEY=your-production-secret-key-change-this
+      - UPLOAD_FOLDER=/app/uploads
+      - MAX_CONTENT_LENGTH=104857600
+      - COMMAND_TIMEOUT=60
+      - MONITORING_ENABLED=true
+    volumes:
+      - ./uploads:/app/uploads
+      - ./logs:/app/logs
+      - /var/log:/host/var/log:ro
+      - /etc:/host/etc:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Optional: Add Nginx reverse proxy
+  nginx:
+    image: nginx:alpine
+    container_name: file-manager-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - file-manager
+    restart: unless-stopped
+    profiles:
+      - production
+
+volumes:
+  uploads:
+  logs: 
