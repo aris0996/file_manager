@@ -1,793 +1,89 @@
-{% extends "base.html" %}
-
+{% extends 'base.html' %}
 {% block title %}File Manager{% endblock %}
-
 {% block content %}
-<div class="row">
-    <div class="col-12">
-        <!-- Breadcrumb -->
-        <nav aria-label="breadcrumb">
-            <ol class="breadcrumb">
-                <li class="breadcrumb-item">
-                    <a href="{{ url_for('file_manager', path='.') }}">
-                        <i class="fas fa-home"></i> Home
-                    </a>
-                </li>
-                {% set path_parts = current_path.split('/') %}
-                {% for i in range(1, path_parts|length) %}
-                    {% if path_parts[i] %}
-                        <li class="breadcrumb-item">
-                            <a href="{{ url_for('file_manager', path='/'.join(path_parts[:i+1])) }}">
-                                {{ path_parts[i] }}
-                            </a>
-                        </li>
-                    {% endif %}
-                {% endfor %}
-            </ol>
-        </nav>
-
-        <!-- Statistics Card -->
-        <div class="row mb-4">
-            <div class="col-md-3">
-                <div class="card bg-primary text-white">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between">
-                            <div>
-                                <h4 class="mb-0">{{ stats.total_files }}</h4>
-                                <small>Files</small>
-                            </div>
-                            <div class="align-self-center">
-                                <i class="fas fa-file fa-2x"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card bg-success text-white">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between">
-                            <div>
-                                <h4 class="mb-0">{{ stats.total_dirs }}</h4>
-                                <small>Folders</small>
-                            </div>
-                            <div class="align-self-center">
-                                <i class="fas fa-folder fa-2x"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card bg-info text-white">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between">
-                            <div>
-                                <h4 class="mb-0">{{ stats.total_size }}</h4>
-                                <small>Total Size</small>
-                            </div>
-                            <div class="align-self-center">
-                                <i class="fas fa-hdd fa-2x"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card bg-warning text-white">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between">
-                            <div>
-                                <h4 class="mb-0" id="selectedCount">0</h4>
-                                <small>Selected</small>
-                            </div>
-                            <div class="align-self-center">
-                                <i class="fas fa-check-square fa-2x"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Search and Filter Bar -->
-        <div class="card mb-4">
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-4">
-                        <div class="input-group">
-                            <span class="input-group-text">
-                                <i class="fas fa-search"></i>
-                            </span>
-                            <input type="text" class="form-control" id="searchInput" 
-                                   placeholder="Search files and folders..." value="{{ search }}">
-                            <button class="btn btn-outline-secondary" onclick="performSearch()">
-                                <i class="fas fa-search"></i>
-                            </button>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <select class="form-select" id="sortSelect" onchange="changeSort()">
-                            <option value="name" {% if sort_by == 'name' %}selected{% endif %}>Sort by Name</option>
-                            <option value="size" {% if sort_by == 'size' %}selected{% endif %}>Sort by Size</option>
-                            <option value="modified" {% if sort_by == 'modified' %}selected{% endif %}>Sort by Modified</option>
-                            <option value="type" {% if sort_by == 'type' %}selected{% endif %}>Sort by Type</option>
-                        </select>
-                    </div>
-                    <div class="col-md-2">
-                        <button class="btn btn-outline-secondary w-100" onclick="toggleSortOrder()">
-                            <i class="fas fa-sort-{% if sort_order == 'asc' %}up{% else %}down{% endif %}"></i>
-                            {{ sort_order.upper() }}
-                        </button>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="btn-group w-100">
-                            <button class="btn btn-outline-primary" onclick="selectAll()">
-                                <i class="fas fa-check-double"></i> Select All
-                            </button>
-                            <button class="btn btn-outline-secondary" onclick="deselectAll()">
-                                <i class="fas fa-times"></i> Clear
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Action Buttons -->
-        <div class="card mb-4">
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-8">
-                        <button class="btn btn-success me-2" onclick="showCreateFolderModal()">
-                            <i class="fas fa-folder-plus me-1"></i>New Folder
-                        </button>
-                        <button class="btn btn-primary me-2" onclick="showUploadModal()">
-                            <i class="fas fa-upload me-1"></i>Upload File
-                        </button>
-                        <button class="btn btn-warning me-2" onclick="refreshPage()">
-                            <i class="fas fa-sync-alt me-1"></i>Refresh
-                        </button>
-                        <button class="btn btn-info me-2" onclick="showSystemInfo()">
-                            <i class="fas fa-server me-1"></i>System Info
-                        </button>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="btn-group w-100" id="bulkActions" style="display: none;">
-                            <button class="btn btn-danger" onclick="bulkDelete()">
-                                <i class="fas fa-trash me-1"></i>Delete Selected
-                            </button>
-                            <button class="btn btn-info" onclick="bulkCompress()">
-                                <i class="fas fa-file-archive me-1"></i>Compress
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- File List -->
-        <div class="card">
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead>
-                            <tr>
-                                <th width="50">
-                                    <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll()">
-                                </th>
-                                <th>Name</th>
-                                <th>Size</th>
-                                <th>Modified</th>
-                                <th>Permissions</th>
-                                <th>Type</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for item in items %}
-                            <tr class="file-item" data-path="{{ item.path }}">
-                                <td>
-                                    <input type="checkbox" class="item-checkbox" value="{{ item.path }}" onchange="updateSelection()">
-                                </td>
-                                <td>
-                                    <div class="d-flex align-items-center">
-                                        {% if item.is_dir %}
-                                            <i class="fas fa-folder folder-icon me-2"></i>
-                                            <a href="{{ url_for('file_manager', path=item.path) }}" class="text-decoration-none">
-                                                {{ item.name }}
-                                            </a>
-                                        {% else %}
-                                            <i class="fas fa-file file-icon me-2"></i>
-                                            <span class="file-name" onclick="previewFile('{{ item.path }}')" style="cursor: pointer;">
-                                                {{ item.name }}
-                                            </span>
-                                        {% endif %}
-                                    </div>
-                                </td>
-                                <td>{{ item.size_formatted }}</td>
-                                <td>{{ item.modified }}</td>
-                                <td>
-                                    <span class="badge bg-secondary">{{ item.permissions }}</span>
-                                </td>
-                                <td>
-                                    <small class="text-muted">{{ item.mime_type.split('/')[-1] if '/' in item.mime_type else item.mime_type }}</small>
-                                </td>
-                                <td>
-                                    <div class="btn-group btn-group-sm">
-                                        {% if not item.is_dir %}
-                                            <button class="btn btn-outline-primary" onclick="downloadFile('{{ item.path }}')" title="Download">
-                                                <i class="fas fa-download"></i>
-                                            </button>
-                                            <button class="btn btn-outline-info" onclick="previewFile('{{ item.path }}')" title="Preview">
-                                                <i class="fas fa-eye"></i>
-                                            </button>
-                                        {% endif %}
-                                        <button class="btn btn-outline-warning" onclick="showRenameModal('{{ item.path }}', '{{ item.name }}')" title="Rename">
-                                            <i class="fas fa-edit"></i>
-                                        </button>
-                                        <button class="btn btn-outline-danger" onclick="deleteItem('{{ item.path }}', '{{ item.name }}')" title="Delete">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
-                                        {% if item.is_dir %}
-                                            <button class="btn btn-outline-info" onclick="compressFolder('{{ item.path }}')" title="Compress">
-                                                <i class="fas fa-file-archive"></i>
-                                            </button>
-                                        {% endif %}
-                                    </div>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+      {% for crumb in breadcrumbs %}
+        <li class="breadcrumb-item {% if loop.last %}active{% endif %}">
+          {% if not loop.last %}<a href="{{ url_for('file_manager', path=crumb.path) }}">{{ crumb.name }}</a>{% else %}{{ crumb.name }}{% endif %}
+        </li>
+      {% endfor %}
+    </ol>
+  </nav>
+  <form class="d-inline" method="post" action="{{ url_for('logout') }}">
+    <button type="submit" class="btn btn-outline-danger btn-sm">Logout</button>
+  </form>
 </div>
-
-<!-- Create Folder Modal -->
-<div class="modal fade" id="createFolderModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">
-                    <i class="fas fa-folder-plus me-2"></i>Create New Folder
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <div class="mb-3">
-                    <label for="folderName" class="form-label">Folder Name</label>
-                    <input type="text" class="form-control" id="folderName" placeholder="Enter folder name">
-                    <div class="form-text">Use only letters, numbers, dots, underscores, and hyphens.</div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-success" onclick="createFolder()">
-                    <i class="fas fa-folder-plus me-1"></i>Create
-                </button>
-            </div>
-        </div>
-    </div>
+<div class="mb-3">
+  <form class="d-inline" method="post" enctype="multipart/form-data" action="{{ url_for('upload', path=current_path) }}">
+    <input type="file" name="file" required>
+    <button type="submit" class="btn btn-primary btn-sm">Upload</button>
+  </form>
+  {% if is_sudo %}
+  <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#createModal">New Folder/File</button>
+  {% endif %}
 </div>
-
-<!-- Upload File Modal -->
-<div class="modal fade" id="uploadModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">
-                    <i class="fas fa-upload me-2"></i>Upload File
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <form id="uploadForm" enctype="multipart/form-data">
-                    <div class="mb-3">
-                        <label for="fileInput" class="form-label">Select File</label>
-                        <input type="file" class="form-control" id="fileInput" name="file" required>
-                        <div class="form-text">Maximum file size: 100MB. Allowed types: {{ app.config['ALLOWED_EXTENSIONS']|join(', ') }}</div>
-                    </div>
-                    <input type="hidden" name="path" value="{{ current_path }}">
-                </form>
-                <div id="uploadProgress" class="progress" style="display: none;">
-                    <div class="progress-bar" role="progressbar" style="width: 0%"></div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" onclick="uploadFile()">
-                    <i class="fas fa-upload me-1"></i>Upload
-                </button>
-            </div>
+<table class="table table-hover bg-white">
+  <thead>
+    <tr><th>Name</th><th>Type</th><th>Actions</th></tr>
+  </thead>
+  <tbody id="file-list">
+    {% for item in items %}
+    <tr>
+      <td>
+        {% if item.is_dir %}
+          <a href="{{ url_for('file_manager', path=item.rel_path) }}"><i class="bi bi-folder"></i> {{ item.name }}</a>
+        {% else %}
+          <i class="bi bi-file-earmark"></i> {{ item.name }}
+        {% endif %}
+      </td>
+      <td>{{ 'Folder' if item.is_dir else 'File' }}</td>
+      <td>
+        {% if not item.is_dir %}
+        <a href="{{ url_for('download', path=item.rel_path) }}" class="btn btn-outline-secondary btn-sm">Download</a>
+        {% endif %}
+        {% if is_sudo %}
+        <button class="btn btn-outline-warning btn-sm rename-btn" data-name="{{ item.name }}" data-path="{{ item.rel_path }}">Rename</button>
+        <button class="btn btn-outline-danger btn-sm delete-btn" data-name="{{ item.name }}" data-path="{{ item.rel_path }}">Delete</button>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% if is_sudo %}
+<!-- Create Modal -->
+<div class="modal fade" id="createModal" tabindex="-1" aria-labelledby="createModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form id="createForm">
+        <div class="modal-header">
+          <h5 class="modal-title" id="createModalLabel">Create New</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
+        <div class="modal-body">
+          <input type="hidden" name="path" value="{{ current_path }}">
+          <div class="mb-3">
+            <label for="name" class="form-label">Name</label>
+            <input type="text" class="form-control" id="name" name="name" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Type</label>
+            <select class="form-select" name="type">
+              <option value="folder">Folder</option>
+              <option value="file">File</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-success">Create</button>
+        </div>
+      </form>
     </div>
+  </div>
 </div>
-
-<!-- Rename Modal -->
-<div class="modal fade" id="renameModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">
-                    <i class="fas fa-edit me-2"></i>Rename Item
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <div class="mb-3">
-                    <label for="newName" class="form-label">New Name</label>
-                    <input type="text" class="form-control" id="newName" placeholder="Enter new name">
-                    <div class="form-text">Use only letters, numbers, dots, underscores, and hyphens.</div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-warning" onclick="renameItem()">
-                    <i class="fas fa-edit me-1"></i>Rename
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- File Preview Modal -->
-<div class="modal fade" id="previewModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">
-                    <i class="fas fa-eye me-2"></i>File Preview
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <div id="previewContent">
-                    <div class="text-center">
-                        <div class="spinner-border" role="status">
-                            <span class="visually-hidden">Loading...</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary" id="downloadPreviewBtn" style="display: none;">
-                    <i class="fas fa-download me-1"></i>Download
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- System Info Modal -->
-<div class="modal fade" id="systemInfoModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">
-                    <i class="fas fa-server me-2"></i>System Information
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <div id="systemInfoContent">
-                    <div class="text-center">
-                        <div class="spinner-border" role="status">
-                            <span class="visually-hidden">Loading...</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-{% endblock %}
-
-{% block scripts %}
-<script>
-let currentPath = '{{ current_path }}';
-let itemToRename = '';
-let selectedItems = [];
-
-function showCreateFolderModal() {
-    $('#createFolderModal').modal('show');
-}
-
-function showUploadModal() {
-    $('#uploadModal').modal('show');
-}
-
-function showRenameModal(path, name) {
-    itemToRename = path;
-    $('#newName').val(name);
-    $('#renameModal').modal('show');
-}
-
-function performSearch() {
-    const searchTerm = $('#searchInput').val();
-    const url = new URL(window.location);
-    url.searchParams.set('search', searchTerm);
-    window.location.href = url.toString();
-}
-
-function changeSort() {
-    const sortBy = $('#sortSelect').val();
-    const url = new URL(window.location);
-    url.searchParams.set('sort', sortBy);
-    window.location.href = url.toString();
-}
-
-function toggleSortOrder() {
-    const url = new URL(window.location);
-    const currentOrder = url.searchParams.get('order') || 'asc';
-    const newOrder = currentOrder === 'asc' ? 'desc' : 'asc';
-    url.searchParams.set('order', newOrder);
-    window.location.href = url.toString();
-}
-
-function updateSelection() {
-    selectedItems = $('.item-checkbox:checked').map(function() {
-        return $(this).val();
-    }).get();
-    
-    $('#selectedCount').text(selectedItems.length);
-    
-    if (selectedItems.length > 0) {
-        $('#bulkActions').show();
-    } else {
-        $('#bulkActions').hide();
-    }
-}
-
-function selectAll() {
-    $('.item-checkbox').prop('checked', true);
-    updateSelection();
-}
-
-function deselectAll() {
-    $('.item-checkbox').prop('checked', false);
-    updateSelection();
-}
-
-function toggleSelectAll() {
-    const isChecked = $('#selectAllCheckbox').prop('checked');
-    $('.item-checkbox').prop('checked', isChecked);
-    updateSelection();
-}
-
-function bulkDelete() {
-    if (selectedItems.length === 0) {
-        alert('Please select items to delete');
-        return;
-    }
-    
-    if (!confirm(`Are you sure you want to delete ${selectedItems.length} selected items?`)) {
-        return;
-    }
-    
-    $.ajax({
-        url: '/api/multiple-operations',
-        method: 'POST',
-        contentType: 'application/json',
-        data: JSON.stringify({
-            operation: 'delete',
-            items: selectedItems
-        }),
-        success: function(response) {
-            location.reload();
-        },
-        error: function(xhr) {
-            alert('Error: ' + (xhr.responseJSON?.error || 'Unknown error'));
-        }
-    });
-}
-
-function bulkCompress() {
-    if (selectedItems.length === 0) {
-        alert('Please select items to compress');
-        return;
-    }
-    
-    $.ajax({
-        url: '/api/multiple-operations',
-        method: 'POST',
-        contentType: 'application/json',
-        data: JSON.stringify({
-            operation: 'compress',
-            items: selectedItems
-        }),
-        success: function(response) {
-            alert('Files compressed successfully!');
-            location.reload();
-        },
-        error: function(xhr) {
-            alert('Error: ' + (xhr.responseJSON?.error || 'Unknown error'));
-        }
-    });
-}
-
-function previewFile(path) {
-    $('#previewModal').modal('show');
-    $('#previewContent').html(`
-        <div class="text-center">
-            <div class="spinner-border" role="status">
-                <span class="visually-hidden">Loading...</span>
-            </div>
-        </div>
-    `);
-    
-    $.ajax({
-        url: '/api/file-preview',
-        method: 'GET',
-        data: { path: path },
-        success: function(response) {
-            let content = '';
-            
-            if (response.type === 'text') {
-                content = `
-                    <pre class="bg-light p-3 rounded"><code>${response.content}</code></pre>
-                    ${response.truncated ? '<div class="alert alert-info">Content truncated. File is too large to preview completely.</div>' : ''}
-                `;
-            } else if (response.type === 'image') {
-                content = `<img src="data:${response.mime_type};base64,${btoa(response.content)}" class="img-fluid" alt="Preview">`;
-            } else {
-                content = `
-                    <div class="alert alert-info">
-                        <h6>Binary File</h6>
-                        <p>Type: ${response.mime_type}</p>
-                        <p>Size: ${response.size}</p>
-                        <p>This file cannot be previewed in the browser.</p>
-                    </div>
-                `;
-            }
-            
-            $('#previewContent').html(content);
-            $('#downloadPreviewBtn').show().off('click').on('click', function() {
-                downloadFile(path);
-            });
-        },
-        error: function(xhr) {
-            $('#previewContent').html(`
-                <div class="alert alert-danger">
-                    Error: ${xhr.responseJSON?.error || 'Unknown error'}
-                </div>
-            `);
-        }
-    });
-}
-
-function showSystemInfo() {
-    $('#systemInfoModal').modal('show');
-    $('#systemInfoContent').html(`
-        <div class="text-center">
-            <div class="spinner-border" role="status">
-                <span class="visually-hidden">Loading...</span>
-            </div>
-        </div>
-    `);
-    
-    $.ajax({
-        url: '/api/system-info',
-        method: 'GET',
-        success: function(response) {
-            let content = `
-                <div class="row">
-                    <div class="col-md-6">
-                        <h6>System Information</h6>
-                        <table class="table table-sm">
-                            <tr><td>Platform:</td><td>${response.platform}</td></tr>
-                            <tr><td>Version:</td><td>${response.platform_version}</td></tr>
-                            <tr><td>Architecture:</td><td>${response.architecture}</td></tr>
-                            <tr><td>Processor:</td><td>${response.processor}</td></tr>
-                            <tr><td>Hostname:</td><td>${response.hostname}</td></tr>
-                        </table>
-                    </div>
-                    <div class="col-md-6">
-                        <h6>Resource Usage</h6>
-                        <table class="table table-sm">
-                            <tr><td>CPU Cores:</td><td>${response.cpu_count}</td></tr>
-                            <tr><td>CPU Usage:</td><td>${response.cpu_percent}%</td></tr>
-                            <tr><td>Memory Total:</td><td>${response.memory.total}</td></tr>
-                            <tr><td>Memory Available:</td><td>${response.memory.available}</td></tr>
-                            <tr><td>Memory Usage:</td><td>${response.memory.percent}%</td></tr>
-                        </table>
-                    </div>
-                </div>
-                <div class="row mt-3">
-                    <div class="col-12">
-                        <h6>Disk Usage</h6>
-                        <div class="progress mb-2">
-                            <div class="progress-bar" role="progressbar" style="width: ${response.disk.percent}%">
-                                ${response.disk.percent}%
-                            </div>
-                        </div>
-                        <small class="text-muted">
-                            Used: ${response.disk.used} / Total: ${response.disk.total} (Free: ${response.disk.free})
-                        </small>
-                    </div>
-                </div>
-            `;
-            
-            $('#systemInfoContent').html(content);
-        },
-        error: function(xhr) {
-            $('#systemInfoContent').html(`
-                <div class="alert alert-danger">
-                    Error: ${xhr.responseJSON?.error || 'Unknown error'}
-                </div>
-            `);
-        }
-    });
-}
-
-function createFolder() {
-    const folderName = $('#folderName').val().trim();
-    if (!folderName) {
-        alert('Please enter a folder name');
-        return;
-    }
-
-    $.ajax({
-        url: '/api/create-folder',
-        method: 'POST',
-        contentType: 'application/json',
-        data: JSON.stringify({
-            path: currentPath,
-            name: folderName
-        }),
-        success: function(response) {
-            $('#createFolderModal').modal('hide');
-            $('#folderName').val('');
-            location.reload();
-        },
-        error: function(xhr) {
-            alert('Error: ' + (xhr.responseJSON?.error || 'Unknown error'));
-        }
-    });
-}
-
-function uploadFile() {
-    const formData = new FormData($('#uploadForm')[0]);
-    const fileInput = $('#fileInput')[0];
-    
-    if (!fileInput.files[0]) {
-        alert('Please select a file');
-        return;
-    }
-    
-    $('#uploadProgress').show();
-    const progressBar = $('#uploadProgress .progress-bar');
-    
-    $.ajax({
-        url: '/api/upload-file',
-        method: 'POST',
-        data: formData,
-        processData: false,
-        contentType: false,
-        xhr: function() {
-            const xhr = new window.XMLHttpRequest();
-            xhr.upload.addEventListener('progress', function(evt) {
-                if (evt.lengthComputable) {
-                    const percentComplete = evt.loaded / evt.total * 100;
-                    progressBar.css('width', percentComplete + '%');
-                    progressBar.text(Math.round(percentComplete) + '%');
-                }
-            }, false);
-            return xhr;
-        },
-        success: function(response) {
-            $('#uploadModal').modal('hide');
-            $('#fileInput').val('');
-            $('#uploadProgress').hide();
-            progressBar.css('width', '0%');
-            location.reload();
-        },
-        error: function(xhr) {
-            alert('Error: ' + (xhr.responseJSON?.error || 'Unknown error'));
-            $('#uploadProgress').hide();
-            progressBar.css('width', '0%');
-        }
-    });
-}
-
-function renameItem() {
-    const newName = $('#newName').val().trim();
-    if (!newName) {
-        alert('Please enter a new name');
-        return;
-    }
-
-    $.ajax({
-        url: '/api/rename-item',
-        method: 'POST',
-        contentType: 'application/json',
-        data: JSON.stringify({
-            old_path: itemToRename,
-            new_name: newName
-        }),
-        success: function(response) {
-            $('#renameModal').modal('hide');
-            location.reload();
-        },
-        error: function(xhr) {
-            alert('Error: ' + (xhr.responseJSON?.error || 'Unknown error'));
-        }
-    });
-}
-
-function deleteItem(path, name) {
-    if (!confirm(`Are you sure you want to delete "${name}"?`)) {
-        return;
-    }
-
-    $.ajax({
-        url: '/api/delete-item',
-        method: 'POST',
-        contentType: 'application/json',
-        data: JSON.stringify({
-            path: path
-        }),
-        success: function(response) {
-            location.reload();
-        },
-        error: function(xhr) {
-            alert('Error: ' + (xhr.responseJSON?.error || 'Unknown error'));
-        }
-    });
-}
-
-function downloadFile(path) {
-    window.open(`/api/download-file?path=${encodeURIComponent(path)}`, '_blank');
-}
-
-function compressFolder(path) {
-    $.ajax({
-        url: '/api/compress-folder',
-        method: 'POST',
-        contentType: 'application/json',
-        data: JSON.stringify({
-            path: path
-        }),
-        success: function(response) {
-            alert(`Folder compressed successfully! Size: ${response.size}`);
-            location.reload();
-        },
-        error: function(xhr) {
-            alert('Error: ' + (xhr.responseJSON?.error || 'Unknown error'));
-        }
-    });
-}
-
-function refreshPage() {
-    location.reload();
-}
-
-// Keyboard shortcuts
-$(document).keydown(function(e) {
-    if (e.ctrlKey && e.key === 'n') {
-        e.preventDefault();
-        showCreateFolderModal();
-    } else if (e.ctrlKey && e.key === 'u') {
-        e.preventDefault();
-        showUploadModal();
-    } else if (e.key === 'F5') {
-        e.preventDefault();
-        refreshPage();
-    } else if (e.ctrlKey && e.key === 'f') {
-        e.preventDefault();
-        $('#searchInput').focus();
-    } else if (e.ctrlKey && e.key === 'a') {
-        e.preventDefault();
-        selectAll();
-    }
-});
-
-// Initialize
-$(document).ready(function() {
-    updateSelection();
-});
-</script>
+{% endif %}
+<!-- Modals for create/rename/delete will be handled by JS -->
 {% endblock %} 
