@@ -37,8 +37,9 @@ class User(UserMixin):
 
 # Enhanced user management
 users = {
-    1: User(1, 'admin', hashlib.sha256('admin123'.encode()).hexdigest(), 'admin'),
-    2: User(2, 'user', hashlib.sha256('user123'.encode()).hexdigest(), 'user')
+    1: User(1, 'admin', '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9', 'admin'),
+    2: User(2, 'user', 'e606e38b0d8c19b24cf0ee3808183162ea7cd63ff7912dbb22b5e803286b4446', 'user'),
+    3: User(3, 'test', 'ecd71870d1963316a97e3ac3408c9835ad8cf0f3c1bc703527c30265534f75ae', 'user')
 }
 
 login_manager = LoginManager()
@@ -100,13 +101,29 @@ def login():
         password = request.form['password']
         password_hash = hashlib.sha256(password.encode()).hexdigest()
         
-        for user in users.values():
-            if user.username == username and user.password_hash == password_hash:
-                login_user(user)
-                session['user_role'] = user.role
-                return redirect(url_for('file_manager'))
+        print(f"Login attempt: {username} with hash: {password_hash}")
         
-        flash('Invalid username or password')
+        # Find user by username
+        user_found = None
+        for user in users.values():
+            if user.username == username:
+                user_found = user
+                break
+        
+        if user_found and user_found.password_hash == password_hash:
+            print(f"Login successful for user: {username}")
+            login_user(user_found)
+            session['user_role'] = user_found.role
+            session['username'] = user_found.username
+            return redirect(url_for('file_manager'))
+        else:
+            print(f"Login failed for user: {username}")
+            if user_found:
+                print(f"Password hash mismatch. Expected: {user_found.password_hash}, Got: {password_hash}")
+            else:
+                print(f"User not found: {username}")
+            flash('Invalid username or password')
+    
     return render_template('login.html')
 
 @app.route('/logout')
@@ -115,6 +132,29 @@ def logout():
     logout_user()
     session.clear()
     return redirect(url_for('login'))
+
+@app.route('/debug/users')
+def debug_users():
+    """Debug endpoint to check users (remove in production)"""
+    user_list = []
+    for user_id, user in users.items():
+        user_list.append({
+            'id': user_id,
+            'username': user.username,
+            'role': user.role,
+            'password_hash': user.password_hash
+        })
+    return jsonify({'users': user_list})
+
+@app.route('/debug/session')
+def debug_session():
+    """Debug endpoint to check session (remove in production)"""
+    return jsonify({
+        'session': dict(session),
+        'current_user': current_user.username if current_user.is_authenticated else None,
+        'user_role': session.get('user_role'),
+        'username': session.get('username')
+    })
 
 @app.route('/file-manager')
 @login_required
