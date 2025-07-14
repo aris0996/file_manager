@@ -36,6 +36,7 @@
     <div class="mb-3">
         <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#createFolderModal">+ Folder</button>
         <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createFileModal">+ File</button>
+        <button class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#uploadFileModal">Upload</button>
         {% if parent %}
         <a href="{{ url_for('explore', req_path=parent) }}" class="btn btn-secondary">⬅️ Up</a>
         {% endif %}
@@ -69,6 +70,7 @@
                     <span>📄 {{ file }}</span>
                     <span>
                         <a href="{{ url_for('edit_file', req_path=(current + '/' + file).strip('/')) }}" class="btn btn-sm btn-info">Edit</a>
+                        <a href="{{ url_for('download_file', req_path=(current + '/' + file).strip('/')) }}" class="btn btn-sm btn-success">Download</a>
                         <form method="POST" action="{{ url_for('delete_file') }}" class="d-inline">
                             <input type="hidden" name="parent" value="{{ current }}">
                             <input type="hidden" name="name" value="{{ file }}">
@@ -148,6 +150,30 @@
         </div>
         <div class="modal-footer">
           <button type="submit" class="btn btn-primary">Create</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+<!-- Upload File Modal -->
+<div class="modal fade" id="uploadFileModal" tabindex="-1" aria-labelledby="uploadFileModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <form method="POST" action="{{ url_for('upload_file') }}" enctype="multipart/form-data">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="uploadFileModalLabel">Upload File</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" name="parent" value="{{ current }}">
+          <div class="mb-3">
+            <label for="fileInput" class="form-label">Pilih file</label>
+            <input type="file" class="form-control" id="fileInput" name="file" required>
+            <div class="form-text">Hanya file: txt, md, py, json, csv, log, conf, ini, html, css, js, xml, yml, yaml</div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-secondary">Upload</button>
         </div>
       </div>
     </form>

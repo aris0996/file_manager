@@ -5,6 +5,7 @@ from werkzeug.security import check_password_hash, generate_password_hash
 import pathlib
 import shutil
 from werkzeug.utils import secure_filename
+from flask_wtf import CSRFProtect
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
@@ -230,6 +231,14 @@ def download_file(req_path):
     except Exception:
         flash('Akses path tidak valid', 'danger')
         return redirect(url_for('dashboard'))
+
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SECURE'] = True
+app.config['REMEMBER_COOKIE_HTTPONLY'] = True
+app.config['REMEMBER_COOKIE_SECURE'] = True
+app.config['WTF_CSRF_TIME_LIMIT'] = 3600
+
+csrf = CSRFProtect(app)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True) 
