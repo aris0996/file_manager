@@ -1,0 +1,264 @@
+{% extends "base.html" %}
+
+{% block title %}Terminal{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-terminal me-2"></i>Linux Terminal
+                </h5>
+                <small class="text-muted">Execute Linux commands safely</small>
+            </div>
+            <div class="card-body p-0">
+                <div class="terminal-container" id="terminalOutput">
+                    <div class="mb-2">
+                        <span class="text-success">$</span> Welcome to the web terminal! Type 'help' for available commands.
+                    </div>
+                </div>
+                <div class="p-3 border-top">
+                    <div class="input-group">
+                        <span class="input-group-text bg-dark text-success">
+                            <i class="fas fa-terminal"></i>
+                        </span>
+                        <input type="text" class="form-control terminal-input" id="commandInput" 
+                               placeholder="Enter command..." autocomplete="off">
+                        <button class="btn btn-success" onclick="executeCommand()">
+                            <i class="fas fa-play"></i>
+                        </button>
+                        <button class="btn btn-warning" onclick="clearTerminal()">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Commands -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-bolt me-2"></i>Quick Commands
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 mb-2">
+                        <button class="btn btn-outline-primary btn-sm w-100" onclick="runQuickCommand('pwd')">
+                            <i class="fas fa-map-marker-alt me-1"></i>pwd
+                        </button>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <button class="btn btn-outline-primary btn-sm w-100" onclick="runQuickCommand('ls -la')">
+                            <i class="fas fa-list me-1"></i>ls -la
+                        </button>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <button class="btn btn-outline-primary btn-sm w-100" onclick="runQuickCommand('df -h')">
+                            <i class="fas fa-hdd me-1"></i>df -h
+                        </button>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <button class="btn btn-outline-primary btn-sm w-100" onclick="runQuickCommand('free -h')">
+                            <i class="fas fa-memory me-1"></i>free -h
+                        </button>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <button class="btn btn-outline-info btn-sm w-100" onclick="runQuickCommand('whoami')">
+                            <i class="fas fa-user me-1"></i>whoami
+                        </button>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <button class="btn btn-outline-info btn-sm w-100" onclick="runQuickCommand('uname -a')">
+                            <i class="fas fa-info-circle me-1"></i>uname -a
+                        </button>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <button class="btn btn-outline-info btn-sm w-100" onclick="runQuickCommand('ps aux | head -10')">
+                            <i class="fas fa-tasks me-1"></i>ps aux
+                        </button>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <button class="btn btn-outline-info btn-sm w-100" onclick="runQuickCommand('netstat -tuln | head -10')">
+                            <i class="fas fa-network-wired me-1"></i>netstat
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Command History -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-history me-2"></i>Command History
+                </h6>
+            </div>
+            <div class="card-body">
+                <div id="commandHistory" class="small">
+                    <div class="text-muted">No commands executed yet.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let commandHistory = [];
+let historyIndex = -1;
+
+// Initialize terminal
+$(document).ready(function() {
+    $('#commandInput').focus();
+    
+    // Handle Enter key
+    $('#commandInput').keydown(function(e) {
+        if (e.key === 'Enter') {
+            executeCommand();
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            navigateHistory('up');
+        } else if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            navigateHistory('down');
+        }
+    });
+});
+
+function executeCommand() {
+    const command = $('#commandInput').val().trim();
+    if (!command) return;
+
+    // Add to history
+    if (command !== commandHistory[commandHistory.length - 1]) {
+        commandHistory.push(command);
+    }
+    historyIndex = commandHistory.length;
+
+    // Display command
+    appendToTerminal(`<span class="text-success">$</span> ${command}`);
+
+    // Execute command
+    $.ajax({
+        url: '/api/execute-command',
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({ command: command }),
+        success: function(response) {
+            if (response.stdout) {
+                appendToTerminal(`<div class="text-white">${response.stdout}</div>`);
+            }
+            if (response.stderr) {
+                appendToTerminal(`<div class="text-danger">${response.stderr}</div>`);
+            }
+            if (response.returncode !== 0) {
+                appendToTerminal(`<div class="text-warning">Command exited with code ${response.returncode}</div>`);
+            }
+            updateCommandHistory();
+        },
+        error: function(xhr) {
+            const error = xhr.responseJSON?.error || 'Unknown error occurred';
+            appendToTerminal(`<div class="text-danger">Error: ${error}</div>`);
+        }
+    });
+
+    $('#commandInput').val('');
+    $('#commandInput').focus();
+}
+
+function runQuickCommand(command) {
+    $('#commandInput').val(command);
+    executeCommand();
+}
+
+function appendToTerminal(content) {
+    const terminal = $('#terminalOutput');
+    terminal.append(`<div class="mb-2">${content}</div>`);
+    terminal.scrollTop(terminal[0].scrollHeight);
+}
+
+function clearTerminal() {
+    $('#terminalOutput').html(`
+        <div class="mb-2">
+            <span class="text-success">$</span> Terminal cleared.
+        </div>
+    `);
+}
+
+function navigateHistory(direction) {
+    if (commandHistory.length === 0) return;
+
+    if (direction === 'up') {
+        if (historyIndex > 0) {
+            historyIndex--;
+        }
+    } else if (direction === 'down') {
+        if (historyIndex < commandHistory.length - 1) {
+            historyIndex++;
+        } else {
+            historyIndex = commandHistory.length;
+        }
+    }
+
+    if (historyIndex < commandHistory.length) {
+        $('#commandInput').val(commandHistory[historyIndex]);
+    } else {
+        $('#commandInput').val('');
+    }
+}
+
+function updateCommandHistory() {
+    const historyDiv = $('#commandHistory');
+    if (commandHistory.length === 0) {
+        historyDiv.html('<div class="text-muted">No commands executed yet.</div>');
+        return;
+    }
+
+    let historyHtml = '';
+    const recentCommands = commandHistory.slice(-10).reverse();
+    recentCommands.forEach((cmd, index) => {
+        historyHtml += `
+            <div class="d-flex justify-content-between align-items-center mb-1">
+                <span class="text-monospace">${cmd}</span>
+                <button class="btn btn-sm btn-outline-primary" onclick="runQuickCommand('${cmd}')">
+                    <i class="fas fa-play"></i>
+                </button>
+            </div>
+        `;
+    });
+    historyDiv.html(historyHtml);
+}
+
+// Auto-complete suggestions
+const commonCommands = [
+    'ls', 'cd', 'pwd', 'mkdir', 'rm', 'cp', 'mv', 'cat', 'grep', 'find',
+    'ps', 'top', 'df', 'du', 'free', 'whoami', 'uname', 'date', 'echo',
+    'chmod', 'chown', 'tar', 'zip', 'unzip', 'wget', 'curl', 'ssh', 'scp'
+];
+
+$('#commandInput').on('input', function() {
+    const input = $(this).val();
+    if (input.length > 0) {
+        const suggestions = commonCommands.filter(cmd => 
+            cmd.startsWith(input.toLowerCase())
+        );
+        // You can implement a dropdown for suggestions here
+    }
+});
+
+// Keyboard shortcuts
+$(document).keydown(function(e) {
+    if (e.ctrlKey && e.key === 'l') {
+        e.preventDefault();
+        clearTerminal();
+    } else if (e.ctrlKey && e.key === 'k') {
+        e.preventDefault();
+        $('#commandInput').val('');
+    }
+});
+</script>
+{% endblock %} 
