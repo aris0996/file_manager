@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<h2>File Manager</h2>
+<div class="mb-3">
+  <a href="/upload" class="btn btn-primary">Upload File</a>
+  <a href="/create_folder" class="btn btn-success">Buat Folder</a>
+</div>
+<table class="table table-striped">
+  <thead>
+    <tr>
+      <th>Nama</th>
+      <th>Tipe</th>
+      <th>Aksi</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for f in files %}
+    <tr>
+      <td>{{ f }}</td>
+      <td>{% if '.' in f %}File{% else %}Folder{% endif %}</td>
+      <td>
+        <a href="/download/{{ f }}" class="btn btn-sm btn-info">Download</a>
+        <a href="/edit/{{ f }}" class="btn btn-sm btn-warning">Edit</a>
+        <a href="/rename/{{ f }}" class="btn btn-sm btn-secondary">Rename</a>
+        <a href="/delete/{{ f }}" class="btn btn-sm btn-danger" onclick="return confirm('Yakin hapus?')">Delete</a>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %} 
