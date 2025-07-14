@@ -43,10 +43,12 @@ fi
 print_status "Checking prerequisites..."
 
 # Check if Docker is installed
-if ! command -v docker &> /dev/null; then
-    print_error "Docker is not installed. Please install Docker first."
+# Check if Docker Compose (modern CLI plugin) is installed
+if ! docker compose version &> /dev/null; then
+    print_error "Docker Compose (v2) is not available. Please install it or alias it."
     exit 1
 fi
+
 
 # Check if Docker Compose is installed
 if ! command -v docker-compose &> /dev/null; then
