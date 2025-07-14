@@ -5,6 +5,8 @@ from flask_login import LoginManager, login_user, login_required, logout_user, c
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 import mimetypes
+import io
+import zipfile
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'ganti_ini_dengan_secret_key_anda'
@@ -107,6 +109,25 @@ def download(path):
     if not abs_path.startswith(root) or not os.path.isfile(abs_path):
         abort(403)
     return send_file(abs_path, as_attachment=True)
+
+@app.route('/download_zip/<path:path>')
+@login_required
+def download_zip(path):
+    root = app.config['UPLOAD_FOLDER']
+    abs_path = os.path.abspath(os.path.join(root, path))
+    if not abs_path.startswith(root) or not os.path.isdir(abs_path):
+        abort(403)
+    mem_zip = io.BytesIO()
+    with zipfile.ZipFile(mem_zip, 'w', zipfile.ZIP_DEFLATED) as zf:
+        for foldername, subfolders, filenames in os.walk(abs_path):
+            rel_folder = os.path.relpath(foldername, abs_path)
+            for filename in filenames:
+                file_path = os.path.join(foldername, filename)
+                arcname = os.path.join(rel_folder, filename) if rel_folder != '.' else filename
+                zf.write(file_path, arcname)
+    mem_zip.seek(0)
+    zip_filename = os.path.basename(abs_path) + '.zip'
+    return send_file(mem_zip, download_name=zip_filename, as_attachment=True)
 
 @app.route('/preview/<path:path>')
 @login_required
