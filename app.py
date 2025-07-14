@@ -1,9 +1,10 @@
 import os
-from flask import Flask, render_template, request, redirect, url_for, flash, send_from_directory, session, abort, send_file
+from flask import Flask, render_template, request, redirect, url_for, flash, send_from_directory, session, abort, send_file, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user, UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
+import mimetypes
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'ganti_ini_dengan_secret_key_anda'
@@ -106,6 +107,29 @@ def download(path):
     if not abs_path.startswith(root) or not os.path.isfile(abs_path):
         abort(403)
     return send_file(abs_path, as_attachment=True)
+
+@app.route('/preview/<path:path>')
+@login_required
+def preview(path):
+    root = app.config['UPLOAD_FOLDER']
+    abs_path = os.path.abspath(os.path.join(root, path))
+    if not abs_path.startswith(root) or not os.path.isfile(abs_path):
+        abort(403)
+    mime, _ = mimetypes.guess_type(abs_path)
+    file_info = {
+        'name': os.path.basename(abs_path),
+        'size': os.path.getsize(abs_path),
+        'mtime': os.path.getmtime(abs_path),
+        'type': mime or 'Unknown',
+    }
+    if mime and mime.startswith('image/'):
+        return render_template('preview_image.html', file_info=file_info, file_url=url_for('download', path=path), current_path=path)
+    elif mime and (mime.startswith('text/') or os.path.splitext(abs_path)[1] in ['.py', '.md', '.txt', '.json', '.csv']):
+        with open(abs_path, 'r', encoding='utf-8', errors='replace') as f:
+            content = f.read(10000)
+        return render_template('preview_text.html', file_info=file_info, content=content, current_path=path)
+    else:
+        return render_template('preview_other.html', file_info=file_info, current_path=path)
 
 @app.route('/create_folder', methods=['GET', 'POST'])
 @app.route('/create_folder/<path:path>', methods=['GET', 'POST'])
