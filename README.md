@@ -75,13 +75,50 @@ A modern Flask-based web application for file and folder management with an inte
 - ✅ **Enhanced Security** - Improved command filtering patterns
 - ✅ **Current Directory Display** - Shows current working directory
 
-## 🛠️ **Installation**
+## 🛠️ **Installation & Quick Start**
 
-### Prerequisites
+### **Option 1: Quick Start (Recommended)**
+
+#### **Windows:**
+```cmd
+# Double click file
+quick_start.bat
+
+# Atau jalankan di Command Prompt
+start_app.bat
+```
+
+#### **Linux/Mac:**
+```bash
+# Berikan permission execute
+chmod +x quick_start.sh start_app.sh
+
+# Jalankan
+./quick_start.sh
+# Atau
+./start_app.sh
+```
+
+### **Option 2: Docker Deployment (Production)**
+
+#### **Prerequisites:**
+- Docker Desktop terinstall
+- Docker Compose v2 tersedia
+
+#### **Setup:**
+```bash
+# Jalankan deployment script
+chmod +x deploy.sh
+./deploy.sh
+```
+
+### **Option 3: Manual Setup**
+
+#### **Prerequisites:**
 - Python 3.7 or higher
 - pip (Python package installer)
 
-### Setup Instructions
+#### **Setup Instructions:**
 
 1. **Clone or download the project**
    ```bash
@@ -89,7 +126,17 @@ A modern Flask-based web application for file and folder management with an inte
    cd file-manager-terminal
    ```
 
-2. **Create a virtual environment (recommended)**
+2. **Check system compatibility**
+   ```bash
+   # Windows
+   check_system.bat
+   
+   # Linux/Mac
+   chmod +x check_system.sh
+   ./check_system.sh
+   ```
+
+3. **Create a virtual environment (recommended)**
    ```bash
    python -m venv venv
    
@@ -100,17 +147,24 @@ A modern Flask-based web application for file and folder management with an inte
    source venv/bin/activate
    ```
 
-3. **Install dependencies**
+4. **Install dependencies**
    ```bash
    pip install -r requirements.txt
    ```
 
-4. **Run the application**
+5. **Run the application**
    ```bash
-   python run.py
+   # Development mode
+   python run_app.py
+   
+   # Production mode
+   python run_app.py --config production --port 8080
+   
+   # Using management script
+   python manage.py run
    ```
 
-5. **Access the application**
+6. **Access the application**
    - Open your web browser
    - Navigate to `http://localhost:5000`
    - Login with default credentials:
