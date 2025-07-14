@@ -1,2 +1,5 @@
-Flask
-flask-cors 
+flask
+flask-cors
+flask-jwt-extended
+flask-limiter
+python-dotenv 
