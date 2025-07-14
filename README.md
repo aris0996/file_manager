@@ -1,23 +1,24 @@
-# File Manager Server (FastAPI + React)
+# File Manager Flask (Docker)
 
-## Cara Jalankan (Linux)
+## Cara Menjalankan
 
-1. Pastikan Docker & docker-compose sudah terinstall
-2. Clone repo ini dan masuk ke folder project
-3. Jalankan:
+1. Build dan jalankan dengan Docker Compose:
 
 ```bash
 docker-compose up --build
 ```
 
-4. Akses file manager di http://localhost:8000 (API) dan http://localhost:8000/static (UI)
+2. Akses di browser:
 
-## Struktur
-- Backend: FastAPI (asynchronous)
-- Frontend: React (Vite)
-- Semua file di-manage di folder `data/` (otomatis dibuat)
+    http://localhost:5000
 
 ## Fitur
-- List, upload, download, delete, rename, preview file/folder
-- UI modern, drag & drop upload
-- Siap untuk deployment production 
+- List, upload, download, delete, rename file/folder
+- UI/UX rapi (HTML+JS)
+- Siap deploy di Docker
+
+---
+
+**Catatan:**
+- Semua file/folder dikelola relatif terhadap direktori kerja container.
+- Untuk keamanan, batasi volume/akses folder sesuai kebutuhan. 

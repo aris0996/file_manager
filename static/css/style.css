@@ -1,0 +1,13 @@
+body { font-family: Arial, sans-serif; background: #f4f4f4; margin: 0; }
+#app { max-width: 800px; margin: 30px auto; background: #fff; border-radius: 8px; box-shadow: 0 2px 8px #0001; padding: 20px; }
+header { display: flex; flex-direction: column; align-items: flex-start; margin-bottom: 20px; }
+header h1 { margin: 0 0 10px 0; }
+#breadcrumb { font-size: 0.95em; color: #555; }
+#file-actions { margin-bottom: 15px; }
+#file-list { display: flex; flex-direction: column; gap: 8px; }
+.folder, .file { padding: 10px 15px; background: #e9ecef; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; }
+.folder { font-weight: bold; background: #d1e7dd; }
+.file { background: #f8d7da; }
+button { margin-left: 8px; padding: 4px 10px; border: none; border-radius: 3px; background: #007bff; color: #fff; cursor: pointer; }
+button:hover { background: #0056b3; }
+#notification { display: none; position: fixed; top: 20px; right: 20px; padding: 12px 20px; border-radius: 5px; color: #fff; z-index: 1000; font-weight: bold; } 

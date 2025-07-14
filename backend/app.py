@@ -1,74 +1,78 @@
+from flask import Flask, request, send_from_directory, jsonify, render_template, redirect, url_for
+from flask_cors import CORS
 import os
-from fastapi import FastAPI, UploadFile, File, HTTPException, Form
-from fastapi.responses import FileResponse, JSONResponse
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
-from typing import List
-import shutil
+from werkzeug.utils import secure_filename
 
-BASE_DIR = "/data"  # folder root yang di-manage
+app = Flask(__name__, static_folder='../static', template_folder='../templates')
+CORS(app)
 
-app = FastAPI()
+BASE_DIR = os.path.abspath('.')
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+@app.route('/')
+def index():
+    return render_template('index.html')
 
-@app.get("/list")
-def list_files(path: str = ""):
+@app.route('/api/list', methods=['GET'])
+def list_files():
+    path = request.args.get('path', '')
     abs_path = os.path.join(BASE_DIR, path)
     if not os.path.exists(abs_path):
-        raise HTTPException(status_code=404, detail="Path not found")
-    items = []
-    for entry in os.scandir(abs_path):
-        items.append({
-            "name": entry.name,
-            "is_dir": entry.is_dir(),
-            "size": entry.stat().st_size if not entry.is_dir() else None
-        })
-    return {"items": items}
+        return jsonify({'error': 'Path not found'}), 404
+    files = []
+    folders = []
+    for entry in os.listdir(abs_path):
+        full_path = os.path.join(abs_path, entry)
+        if os.path.isdir(full_path):
+            folders.append(entry)
+        else:
+            files.append(entry)
+    return jsonify({'folders': folders, 'files': files})
 
-@app.post("/upload")
-def upload_file(path: str = Form(""), file: UploadFile = File(...)):
-    abs_path = os.path.join(BASE_DIR, path, file.filename)
-    with open(abs_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
-    return {"success": True}
-
-@app.get("/download")
-def download_file(path: str):
+@app.route('/api/upload', methods=['POST'])
+def upload_file():
+    path = request.form.get('path', '')
+    file = request.files['file']
     abs_path = os.path.join(BASE_DIR, path)
-    if not os.path.isfile(abs_path):
-        raise HTTPException(status_code=404, detail="File not found")
-    return FileResponse(abs_path, filename=os.path.basename(abs_path))
+    if not os.path.exists(abs_path):
+        os.makedirs(abs_path)
+    filename = secure_filename(file.filename)
+    file.save(os.path.join(abs_path, filename))
+    return jsonify({'success': True})
 
-@app.post("/delete")
-def delete_file(path: str = Form(...)):
+@app.route('/api/download', methods=['GET'])
+def download_file():
+    path = request.args.get('path', '')
+    filename = request.args.get('filename')
     abs_path = os.path.join(BASE_DIR, path)
+    return send_from_directory(abs_path, filename, as_attachment=True)
+
+@app.route('/api/delete', methods=['POST'])
+def delete_file():
+    data = request.json
+    path = data.get('path', '')
+    name = data.get('name')
+    abs_path = os.path.join(BASE_DIR, path, name)
     if os.path.isdir(abs_path):
+        import shutil
         shutil.rmtree(abs_path)
-    elif os.path.isfile(abs_path):
-        os.remove(abs_path)
     else:
-        raise HTTPException(status_code=404, detail="File/folder not found")
-    return {"success": True}
+        os.remove(abs_path)
+    return jsonify({'success': True})
 
-@app.post("/rename")
-def rename_file(path: str = Form(...), new_name: str = Form(...)):
-    abs_path = os.path.join(BASE_DIR, path)
-    new_path = os.path.join(os.path.dirname(abs_path), new_name)
-    os.rename(abs_path, new_path)
-    return {"success": True}
+@app.route('/api/rename', methods=['POST'])
+def rename_file():
+    data = request.json
+    path = data.get('path', '')
+    old_name = data.get('old_name')
+    new_name = data.get('new_name')
+    abs_old = os.path.join(BASE_DIR, path, old_name)
+    abs_new = os.path.join(BASE_DIR, path, new_name)
+    os.rename(abs_old, abs_new)
+    return jsonify({'success': True})
 
-@app.get("/preview")
-def preview_file(path: str):
-    abs_path = os.path.join(BASE_DIR, path)
-    if not os.path.isfile(abs_path):
-        raise HTTPException(status_code=404, detail="File not found")
-    with open(abs_path, "r", encoding="utf-8", errors="ignore") as f:
-        content = f.read(4096)
-    return JSONResponse({"content": content}) 
+@app.route('/static/<path:filename>')
+def static_files(filename):
+    return send_from_directory('../static', filename)
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=8888, debug=True) 

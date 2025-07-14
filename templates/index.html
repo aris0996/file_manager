@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Manager</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div id="app">
+        <header>
+            <h1>File Manager</h1>
+            <nav id="breadcrumb"></nav>
+        </header>
+        <main>
+            <div id="file-actions">
+                <input type="file" id="file-upload" multiple>
+                <button id="upload-btn">Upload</button>
+                <button id="new-folder-btn">New Folder</button>
+            </div>
+            <div id="file-list"></div>
+        </main>
+        <div id="notification"></div>
+    </div>
+    <script src="/static/js/main.js"></script>
+</body>
+</html> 
