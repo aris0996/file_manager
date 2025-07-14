@@ -1,5 +1,5 @@
 import os
-from flask import Flask, render_template, request, redirect, url_for, flash, send_from_directory, session, abort
+from flask import Flask, render_template, request, redirect, url_for, flash, send_from_directory, session, abort, send_file
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user, UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -27,13 +27,20 @@ class User(UserMixin, db.Model):
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-@app.route('/')
+@app.route('/', defaults={'path': ''})
+@app.route('/<path:path>')
 @login_required
-def dashboard():
-    # List files/folders in UPLOAD_FOLDER
+def dashboard(path):
     root = app.config['UPLOAD_FOLDER']
-    files = os.listdir(root)
-    return render_template('dashboard.html', files=files)
+    abs_path = os.path.abspath(os.path.join(root, path))
+    if not abs_path.startswith(root):
+        abort(403)
+    if not os.path.exists(abs_path):
+        flash('Folder tidak ditemukan!')
+        return redirect(url_for('dashboard'))
+    files = os.listdir(abs_path)
+    files = sorted(files, key=lambda x: (not os.path.isdir(os.path.join(abs_path, x)), x.lower()))
+    return render_template('dashboard.html', files=files, current_path=path)
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -68,6 +75,115 @@ def register():
         flash('Registrasi berhasil! Silakan login.')
         return redirect(url_for('login'))
     return render_template('register.html')
+
+@app.route('/upload', methods=['GET', 'POST'])
+@app.route('/upload/<path:path>', methods=['GET', 'POST'])
+@login_required
+def upload(path=''):
+    root = app.config['UPLOAD_FOLDER']
+    abs_path = os.path.abspath(os.path.join(root, path))
+    if not abs_path.startswith(root):
+        abort(403)
+    if request.method == 'POST':
+        if 'file' not in request.files:
+            flash('No file part')
+            return redirect(request.url)
+        file = request.files['file']
+        if file.filename == '':
+            flash('No selected file')
+            return redirect(request.url)
+        filename = secure_filename(file.filename)
+        file.save(os.path.join(abs_path, filename))
+        flash('File berhasil diupload!')
+        return redirect(url_for('dashboard', path=path))
+    return render_template('file_upload.html', current_path=path)
+
+@app.route('/download/<path:path>')
+@login_required
+def download(path):
+    root = app.config['UPLOAD_FOLDER']
+    abs_path = os.path.abspath(os.path.join(root, path))
+    if not abs_path.startswith(root) or not os.path.isfile(abs_path):
+        abort(403)
+    return send_file(abs_path, as_attachment=True)
+
+@app.route('/create_folder', methods=['GET', 'POST'])
+@app.route('/create_folder/<path:path>', methods=['GET', 'POST'])
+@login_required
+def create_folder(path=''):
+    root = app.config['UPLOAD_FOLDER']
+    abs_path = os.path.abspath(os.path.join(root, path))
+    if not abs_path.startswith(root):
+        abort(403)
+    if request.method == 'POST':
+        folder_name = secure_filename(request.form['folder_name'])
+        new_folder_path = os.path.join(abs_path, folder_name)
+        try:
+            os.makedirs(new_folder_path)
+            flash('Folder berhasil dibuat!')
+        except Exception as e:
+            flash(f'Gagal membuat folder: {e}')
+        return redirect(url_for('dashboard', path=path))
+    return render_template('create_folder.html', current_path=path)
+
+@app.route('/edit/<path:path>', methods=['GET', 'POST'])
+@login_required
+def edit_file(path):
+    root = app.config['UPLOAD_FOLDER']
+    abs_path = os.path.abspath(os.path.join(root, path))
+    if not abs_path.startswith(root) or not os.path.isfile(abs_path):
+        abort(403)
+    if request.method == 'POST':
+        content = request.form['content']
+        try:
+            with open(abs_path, 'w', encoding='utf-8') as f:
+                f.write(content)
+            flash('File berhasil disimpan!')
+        except Exception as e:
+            flash(f'Gagal menyimpan file: {e}')
+        return redirect(url_for('dashboard', path=os.path.dirname(path)))
+    with open(abs_path, 'r', encoding='utf-8') as f:
+        content = f.read()
+    return render_template('file_edit.html', filename=os.path.basename(path), content=content, current_path=path)
+
+@app.route('/rename/<path:path>', methods=['GET', 'POST'])
+@login_required
+def rename(path):
+    root = app.config['UPLOAD_FOLDER']
+    abs_path = os.path.abspath(os.path.join(root, path))
+    if not abs_path.startswith(root) or not os.path.exists(abs_path):
+        abort(403)
+    if request.method == 'POST':
+        new_name = secure_filename(request.form['new_name'])
+        new_path = os.path.join(os.path.dirname(abs_path), new_name)
+        if not new_path.startswith(root):
+            abort(403)
+        try:
+            os.rename(abs_path, new_path)
+            flash('Berhasil rename!')
+        except Exception as e:
+            flash(f'Gagal rename: {e}')
+        return redirect(url_for('dashboard', path=os.path.dirname(path)))
+    return render_template('rename.html', filename=os.path.basename(path), current_path=path)
+
+@app.route('/delete/<path:path>', methods=['GET', 'POST'])
+@login_required
+def delete(path):
+    root = app.config['UPLOAD_FOLDER']
+    abs_path = os.path.abspath(os.path.join(root, path))
+    if not abs_path.startswith(root) or not os.path.exists(abs_path):
+        abort(403)
+    parent_path = os.path.dirname(path)
+    try:
+        if os.path.isfile(abs_path):
+            os.remove(abs_path)
+        else:
+            import shutil
+            shutil.rmtree(abs_path)
+        flash('Berhasil dihapus!')
+    except Exception as e:
+        flash(f'Gagal menghapus: {e}')
+    return redirect(url_for('dashboard', path=parent_path))
 
 if __name__ == '__main__':
     with app.app_context():

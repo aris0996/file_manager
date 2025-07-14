@@ -2,9 +2,15 @@
 {% block title %}Dashboard{% endblock %}
 {% block content %}
 <h2>File Manager</h2>
+<div class="mb-2">
+  <strong>Path:</strong> /{{ current_path }}
+</div>
 <div class="mb-3">
-  <a href="/upload" class="btn btn-primary">Upload File</a>
-  <a href="/create_folder" class="btn btn-success">Buat Folder</a>
+  <a href="/upload/{{ current_path }}" class="btn btn-primary">Upload File</a>
+  <a href="/create_folder/{{ current_path }}" class="btn btn-success">Buat Folder</a>
+  {% if current_path %}
+    <a href="/{{ current_path.rsplit('/', 1)[0] }}" class="btn btn-secondary">Kembali</a>
+  {% endif %}
 </div>
 <table class="table table-striped">
   <thead>
@@ -17,13 +23,22 @@
   <tbody>
     {% for f in files %}
     <tr>
-      <td>{{ f }}</td>
+      <td>
+        {% set full_path = current_path ~ '/' ~ f if current_path else f %}
+        {% if '.' not in f %}
+          <a href="/{{ full_path }}">{{ f }}</a>
+        {% else %}
+          {{ f }}
+        {% endif %}
+      </td>
       <td>{% if '.' in f %}File{% else %}Folder{% endif %}</td>
       <td>
-        <a href="/download/{{ f }}" class="btn btn-sm btn-info">Download</a>
-        <a href="/edit/{{ f }}" class="btn btn-sm btn-warning">Edit</a>
-        <a href="/rename/{{ f }}" class="btn btn-sm btn-secondary">Rename</a>
-        <a href="/delete/{{ f }}" class="btn btn-sm btn-danger" onclick="return confirm('Yakin hapus?')">Delete</a>
+        {% if '.' in f %}
+          <a href="/download/{{ full_path }}" class="btn btn-sm btn-info">Download</a>
+          <a href="/edit/{{ full_path }}" class="btn btn-sm btn-warning">Edit</a>
+        {% endif %}
+        <a href="/rename/{{ full_path }}" class="btn btn-sm btn-secondary">Rename</a>
+        <a href="/delete/{{ full_path }}" class="btn btn-sm btn-danger" onclick="return confirm('Yakin hapus?')">Delete</a>
       </td>
     </tr>
     {% endfor %}
