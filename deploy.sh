@@ -43,16 +43,14 @@ fi
 print_status "Checking prerequisites..."
 
 # Check if Docker is installed
-# Check if Docker Compose (modern CLI plugin) is installed
-if ! docker compose version &> /dev/null; then
-    print_error "Docker Compose (v2) is not available. Please install it or alias it."
+if ! command -v docker &> /dev/null; then
+    print_error "Docker is not installed. Please install Docker first."
     exit 1
 fi
 
-
-# Check if Docker Compose is installed
-if ! command -v docker-compose &> /dev/null; then
-    print_error "Docker Compose is not installed. Please install Docker Compose first."
+# Check if Docker Compose (v2) is available
+if ! docker compose version &> /dev/null; then
+    print_error "Docker Compose (v2) is not available. Please install it or fix Docker setup."
     exit 1
 fi
 
@@ -100,7 +98,7 @@ fi
 
 # Build and start the application
 print_status "Building and starting the application..."
-docker-compose up -d --build
+docker compose up -d --build
 
 # Wait for application to start
 print_status "Waiting for application to start..."
@@ -110,7 +108,7 @@ sleep 10
 if curl -f http://localhost:5000/ > /dev/null 2>&1; then
     print_success "Application is running successfully!"
 else
-    print_error "Application failed to start. Check logs with: docker-compose logs"
+    print_error "Application failed to start. Check logs with: docker compose logs"
     exit 1
 fi
 
@@ -129,9 +127,9 @@ echo "  Admin: admin / admin123"
 echo "  User:  user / user123"
 echo ""
 echo "Useful commands:"
-echo "  View logs:     docker-compose logs -f"
-echo "  Stop app:      docker-compose down"
-echo "  Restart app:   docker-compose restart"
+echo "  View logs:     docker compose logs -f"
+echo "  Stop app:      docker compose down"
+echo "  Restart app:   docker compose restart"
 echo "  Update app:    ./deploy.sh"
 echo ""
 echo "Security notes:"
