@@ -1,6 +1,0 @@
-Flask
-Flask-Login
-Flask-WTF
-Flask-Bootstrap
-Werkzeug
-Flask-SQLAlchemy 

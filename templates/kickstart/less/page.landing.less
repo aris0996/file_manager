@@ -1,0 +1,212 @@
+.landing {
+
+  .box + .box,
+  .box + div {
+    margin: 0;
+  }
+}
+
+//
+// Sections
+// --------------------------------------------------
+
+.section {
+  padding: @sections-v-pad 0;
+  background: #fff;
+
+  > .container > .box {
+    margin: 0;
+
+    &__caption {
+      text-align: center;
+      font-size: 40px;
+      font-weight: 100;
+      margin-bottom: @sections-v-pad/2;
+    }
+
+    &__content {
+      padding: 0;
+    }
+  }
+}
+
+
+
+//
+// Section: who we are
+// --------------------------------------------------
+
+.section-what {
+
+  > .container > .box {
+
+    &__content {
+
+    }
+  }
+}
+
+
+
+//
+// Section: features
+// --------------------------------------------------
+
+.section-features {
+  background: #f2f2f2;
+
+  .row + .row {
+    margin-top: @sections-v-pad/2;
+
+    @media (max-width: @grid-float-breakpoint) {
+      margin-top: 0;
+    }
+  }
+}
+
+.b-feature {
+  .clearfix();
+  padding-left: 40px;
+
+  &__img {
+    float: left;
+    width: 80px;
+    height: 80px;
+    line-height: 80px;
+    text-align: center;
+    border-radius: 50%;
+    font-size: 30px;
+    border: 1px solid fade(#000, 10%);
+    color: @brand-primary;
+    margin-right: 20px;
+  }
+
+  &__body {
+    overflow: hidden;
+
+    h3 {
+      margin: 0 0 15px;
+    }
+
+    p:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  @media (max-width: @grid-float-breakpoint) {
+    padding-left: 0;
+    margin-bottom: @vertical-rhythm;
+
+    &__img {
+      float: none;
+      margin: 0 auto 10px;
+    }
+
+    &__body {
+      text-align: center;
+    }
+  }
+}
+
+
+
+//
+// Section: mobile
+// --------------------------------------------------
+
+.section-mobile {
+  background: #2d2d30 url('../img/bg-section-mobile.jpeg') 50% 50% no-repeat;
+  background-size: cover;
+  position: relative;
+
+  &::after {
+    display: block;
+    content: '';
+    position: absolute;
+    z-index: 10;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    background: #2a2d36;
+    opacity: .54;
+  }
+
+  > .container {
+    position: relative;
+    z-index: 15;
+  }
+
+  &__text {
+    h2,
+    p {
+      color: #fff;
+    }
+  }
+}
+
+
+
+//
+// Section: portfolio
+// --------------------------------------------------
+
+.section-portfolio {
+  border-top: 1px solid #eee;
+}
+
+
+
+//
+// Section: blog
+// --------------------------------------------------
+
+.section-blog {
+  background: #f2f2f2;
+  border-top: 1px solid #eee;
+  border-bottom: 1px solid #eee;
+}
+
+.blogroll {
+
+  .row + .row {
+    margin-top: @sections-v-pad;
+  }
+}
+
+.blog-item {
+
+  &__date {
+    font-weight: bold;
+    color: fade(@text-color, 50%);
+  }
+
+  &__title {
+    margin: 10px 0 20px;
+    font-weight: bold;
+
+    a {
+      &,
+      &:focus {
+        color: @text-color;
+      }
+
+      &:hover {
+        color: @link-color;
+        text-decoration: none;
+      }
+    }
+  }
+
+  &__intro {
+    color: fade(@text-color, 50%);
+  }
+
+  &__author {
+    margin-top: 20px;
+    padding-top: 10px;
+    border-top: 1px solid #eee;
+    font-weight: bold;
+    color: fade(@text-color, 70%);
+  }
+}

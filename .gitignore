@@ -1,0 +1,17 @@
+.idea
+.php_cs.cache
+backup/*
+!backup/.htaccess
+includes/config.inc.php
+modules/*
+!modules/blog
+!modules/fancybox
+!modules/kcaptcha
+*node_modules
+templates/*
+!templates/_common
+!templates/kickstart
+tmp/*
+!tmp/.htaccess
+uploads/*
+!uploads/.htaccess

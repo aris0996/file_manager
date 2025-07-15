@@ -1,0 +1,161 @@
+.inventory {
+  background: @inventory-bg;
+  border-bottom: 1px solid @inventory-border-color;
+  position: relative;
+  z-index: 10;
+}
+
+
+
+//
+// Inventory search
+// --------------------------------------------------
+
+.search-inventory {
+  margin: 0 20px 0 0;
+  position: relative;
+  padding: 0 0 0 15px;
+  border-right: 1px solid @inventory-border-color;
+  border-left: 1px solid @inventory-border-color;
+
+  &.pull-right {
+    margin: 0 0 0 20px;
+  }
+
+  input {
+    background: none;
+    border: 0 none;
+    line-height: @inventory-height;
+    width: 100px;
+    padding: 0;
+    color: @inventory-text-color;
+
+    .placeholder(fade(@inventory-text-color, 30%));
+
+    &:focus {
+      outline: 0 none;
+    }
+  }
+
+  button {
+    border: 0;
+    background: none;
+    color: @inventory-link-color;
+    line-height: @inventory-height;
+    padding: 0 15px 0 15px;
+
+    &:focus {
+      outline: 0 none;
+    }
+
+    &:hover {
+      background: none;
+      color: @inventory-link-hover-color;
+    }
+  }
+
+  @media (max-width: @grid-float-breakpoint) {
+
+    &.pull-right {
+      margin: 0 20px 0 0;
+      float: left !important;
+    }
+  }
+}
+
+
+
+//
+// Inventory navs
+// --------------------------------------------------
+
+.nav-inventory {
+  margin: 0 20px 0 0;
+  padding: 0;
+  list-style-type: none;
+
+  > li {
+    float: left;
+    margin: 0 10px 0 0;
+
+    > a {
+      &,
+      &:focus {
+        display: block;
+        line-height: @inventory-height;
+        color: @inventory-link-color;
+        font-size: 12px;
+        text-decoration: none;
+      }
+
+      &:hover {
+        color: @inventory-link-hover-color;
+        text-decoration: underline;
+      }
+    }
+
+    &.active > a,
+    &.active > a:focus,
+    &.active > a:hover {
+      color: @inventory-link-active-color;
+    }
+  }
+
+  &.pull-right {
+    margin: 0 0 0 20px;
+
+    > li {
+      margin: 0 0 0 10px;
+    }
+  }
+}
+
+
+
+//
+// Social nav
+// --------------------------------------------------
+
+.nav-inventory-social {
+
+  > li {
+    margin: 0;
+
+    > a {
+      &,
+      &:focus {
+        padding: 0 15px;
+        text-align: center;
+        border-left: 1px solid fade(#000, 5%);
+        color: @inventory-social-link-color;
+        font-size: 15px;
+        min-width: 16px;
+        box-sizing: content-box;
+      }
+    }
+
+    &:last-child > a {
+      border-right: 1px solid fade(#000, 5%);
+    }
+  }
+
+  &.pull-right {
+    margin: 0 0 0 20px;
+
+    > li {
+      margin: 0;
+    }
+  }
+}
+
+
+
+//
+// Inventory text
+// --------------------------------------------------
+
+.text-inventory {
+  margin: 0;
+  line-height: @inventory-height;
+  color: @inventory-text-color;
+}
